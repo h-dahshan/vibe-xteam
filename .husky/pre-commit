@@ -1,0 +1,6 @@
+echo "\033[1m\033[1;33m⚡️  pre-commit hook running  ⚡️\033[0m"
+
+### run code linting
+pnpm lint
+### run code formatting
+pnpm format
