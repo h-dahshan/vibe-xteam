@@ -237,11 +237,7 @@ It allows Leaders to create, update, delete, and list teams, and to add Mates vi
 
 ## 8. Non-Functional Requirements
 
-- NFR-1: Code validation must be <300ms.
-- NFR-2: Team CRUD <200ms response.
-- NFR-3: Team listing should support pagination by nature.
-- NFR-4: Code generation must be cryptographically secure.
-- NFR-5: Code must be revoked after 3 days, use of cron
+---
 
 ## 9. Audit Logging
 

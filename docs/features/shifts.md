@@ -136,7 +136,11 @@ Allows Leaders to define the working hours of each Mate so that events are only 
 
 ---
 
-## 8. Logging
+## 8. Non-Functional Requirements
+
+---
+
+## 9. Audit Logging
 
 - Log every action with in `audit_logs`
 

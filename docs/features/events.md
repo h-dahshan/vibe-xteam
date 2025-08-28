@@ -463,13 +463,6 @@ Constraints
 
 ## 8. Non-Functional Requirements
 
-- **Performance**:
-  - Day view render ≤ 200 ms for ≤ 50 Mates.
-  - 3-Day/Week render ≤ 300 ms for ≤ 200 cells.
-- **Scalability**: Back-end supports ≥ 1,000 concurrent event fetches.
-- **Reliability**: 99.9% uptime for scheduling APIs.
-- **Accessibility**: WCAG 2.1 AA compliance for all popovers & dialogs.
-
 ---
 
 ## 9. Audit Logging
