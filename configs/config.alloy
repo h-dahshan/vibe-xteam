@@ -1,0 +1,37 @@
+// Receiver for OTLP (from NestJS OTel SDK)
+otelcol.receiver.otlp "default" {
+  grpc { }
+  http { }
+}
+
+// Export logs to Loki
+otelcol.exporter.loki "default" {
+  endpoint = "http://loki:3100/loki/api/v1/push"
+}
+
+// Export traces to Tempo
+otelcol.exporter.otlp "tempo" {
+  endpoint = "tempo:4317"
+  tls { insecure = true }
+}
+
+// Export metrics to Prometheus
+otelcol.exporter.prometheus "default" {
+  endpoint = "0.0.0.0:9464"
+}
+
+// Pipelines
+otelcol.service "logs" {
+  receivers = [otelcol.receiver.otlp.default]
+  exporters = [otelcol.exporter.loki.default]
+}
+
+otelcol.service "traces" {
+  receivers = [otelcol.receiver.otlp.default]
+  exporters = [otelcol.exporter.otlp.tempo]
+}
+
+otelcol.service "metrics" {
+  receivers = [otelcol.receiver.otlp.default]
+  exporters = [otelcol.exporter.prometheus.default]
+}
