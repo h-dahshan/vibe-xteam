@@ -254,9 +254,7 @@ Switching between profiles allows the user to access different functionalities b
 ## 8. Non-Functional Requirements
 
 - NFR-1: Support OAuth (Google, Apple) login in future versions.
-- NFR-2: Maintain <200ms response time for profile switching.
-- NFR-3: Ensure 99.9% uptime for authentication endpoints.
-- NFR-4: Store passwords securely using bcrypt or Argon2.
+- NFR-4: Store passwords securely using bcrypt.
 - NFR-5: Security Notes
   - Refresh token is stored **only** in HTTP-only cookie to prevent JavaScript access (protects against XSS).
   - CSRF protection is required for `/auth/refresh` (e.g., using CSRF tokens or SameSite cookies).

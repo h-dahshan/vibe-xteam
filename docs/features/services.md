@@ -171,10 +171,6 @@ Category saved to `service_categories`
 
 ## 8. Non-Functional Requirements
 
-- API must validate Leader ownership on all CRUD.
-- Read-only caching allowed for types/subtypes (low change frequency).
-- All lists paginated & searchable for large datasets.
-
 ---
 
 ## 9. Audit Logging

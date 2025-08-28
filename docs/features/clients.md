@@ -158,7 +158,11 @@ Clients can be linked to events and services.
 
 ---
 
-## 8. Logging
+## 8. Non-Functional Requirements
+
+---
+
+## 9. Audit Logging
 
 - Log every action with in `audit_logs`
 

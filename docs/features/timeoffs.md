@@ -144,7 +144,11 @@ Allows Leaders to record non-working periods for Mates (vacation, sick leave, br
 
 ---
 
-## 8. Logging
+## 8. Non-Functional Requirements
+
+---
+
+## 9. Audit Logging
 
 - Log every action with in `audit_logs`
 
