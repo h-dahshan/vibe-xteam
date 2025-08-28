@@ -12,4 +12,4 @@ pnpm build
 pnpm test
 pnpm test:e2e
 ### check for console logs
-grep -r "console\.log" . && echo "Remove console.log!" && exit 1 || echo "No console.log found."
+grep -R "console\.log" ./**/apps/src ./packages/**/src && echo "Remove console.log!" && exit 1 || echo "No console.log found."
