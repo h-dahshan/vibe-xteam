@@ -9,8 +9,7 @@ import {
 } from "@nestjs/common";
 import { ExamplesService } from "./example.service";
 
-import { CreateExampleDto } from "@repo/api/example/dto/create-example.dto";
-import { UpdateExampleDto } from "@repo/api/example/dto/update-example.dto";
+import { CreateExampleDto, UpdateExampleDto } from "@repo/api";
 
 @Controller("examples")
 export class ExampleController {
