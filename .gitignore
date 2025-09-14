@@ -17,6 +17,7 @@ node_modules
 # Testing
 .nyc_output
 blob-report/
+test-logs/
 coverage/
 test-results/
 playwright/.cache/

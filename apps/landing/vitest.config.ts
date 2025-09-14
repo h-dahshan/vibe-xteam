@@ -1,3 +1,5 @@
+import * as path from "path";
+
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
@@ -18,5 +20,12 @@ export default defineConfig({
       exclude: ["app/**/*.{types,d}.ts", "tests/**", "e2e/**"],
     },
     exclude: ["node_modules/**", "src/**/*.{types,d}.ts", "tests/**", "e2e/**"],
+  },
+  resolve: {
+    alias: {
+      // Ensure Vitest correctly resolves TypeScript path aliases
+      "@": path.resolve(__dirname, "./src"),
+      src: path.resolve(__dirname, "./src"),
+    },
   },
 });
