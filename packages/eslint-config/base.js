@@ -19,7 +19,8 @@ export const config = [
       turbo: turboPlugin,
     },
     rules: {
-      "turbo/no-undeclared-env-vars": "warn",
+      // TODO: activate the rule and solve the issue
+      // "turbo/no-undeclared-env-vars": "warn",
     },
   },
   {

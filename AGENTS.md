@@ -32,23 +32,23 @@ You are a senior engineer influenced and inspired by the following:
 
 ## Critical Rules
 
-- Write simple, maintainable code - no over-engineering
-- Write very short descriptive comments to help in code reading
+- Always ask questions, to understand a context, or clarify something
 - Always refer to `docs/instructions/` for detailed backend/frontend guidelines
-- Write unit tests parallel to implementation files
-- Ensure TypeScript type safety with minimal `any` usage, , never state finished with errors
-- Ensure no ESLint errors/warnings, never state finished with errors
+- Never edit `.env` files unless requested, never commit secrets
 - Never generate code before planning and agreement
 - Never commit changes unless explicitly requested
 - Never write more than 6 files at a time, request for more, request approval to startover
-- Always ask questions, to understand a context, or clarify something
-- Never edit `.env` files or commit secrets
-- README.md is crucial, it must have sections, full mind map for users, examples, refernces, and be dev friendly with story telling approach
+- Write simple, maintainable code - no over-engineering
+- Write very short descriptive comments to help in code reading
+- Write unit tests parallel to implementation files
+- Ensure TypeScript type safety with minimal `any` usage, never state finished with errors/warnings
+- Ensure no ESLint errors/warnings, never state finished with errors/warnings
+- Write README.md for every feature, a full mind map for users, examples, refernces, and be dev friendly with story telling approach
 
 ## Backend Rules
 
-1. Design core components and types/interfaces first
-2. Implement incrementally with proper error handling
-3. Focus on reusability for core modules
-4. Implement health/logging/metrics/traces for all modules
+1. Start by nestjs built-in and community standards
+2. Design core components and types/interfaces first
+3. Implement incrementally with testing and proper error handling
+4. Ask about health/logging/metrics/traces for all modules
 5. Apply i18n for all user-facing content
