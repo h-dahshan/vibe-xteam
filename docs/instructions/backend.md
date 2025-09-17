@@ -291,7 +291,7 @@
 
 ### Unit Testing
 
-- Use **Jest** with NestJS testing utilities
+- Use **Vitest** with NestJS testing utilities
 - Mock **external dependencies** properly
 - Test **all service methods** with various scenarios
 - Test **error scenarios** and edge cases

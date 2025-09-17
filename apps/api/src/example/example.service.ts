@@ -1,9 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { Example } from "@repo/api/example/entities/example.entity";
-
-import { CreateExampleDto } from "@repo/api/example/dto/create-example.dto";
-import { UpdateExampleDto } from "@repo/api/example/dto/update-example.dto";
+import { Example, CreateExampleDto, UpdateExampleDto } from "@repo/api";
 
 @Injectable()
 export class ExamplesService {
