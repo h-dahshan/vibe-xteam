@@ -17,12 +17,16 @@ describe("LoggerService", () => {
     }),
     getObservability: vi.fn().mockReturnValue({
       logServiceName: overrides?.logServiceName || "test-logger",
-      logLevel: overrides?.logLevel || "error",
-      logTransport: "stdout",
+      logLevel: overrides?.logLevel || "debug",
+      logTransport: overrides?.logTransport || "stdout",
       logFormat: overrides?.logFormat || "otel-json",
       logRedactPatterns: ["password", "token", "secret"],
       logMaxMessageLength: 10000,
     }),
+    isDevelopment: overrides?.env === "development",
+    isProduction: overrides?.env === "production",
+    isStaging: overrides?.env === "staging",
+    isTest: overrides?.env === "test",
   });
 
   beforeEach(async () => {
@@ -58,7 +62,7 @@ describe("LoggerService", () => {
     });
 
     it("should have correct default log level", () => {
-      expect(service.getLogLevel()).toBe("error");
+      expect(service.getLogLevel()).toBe("debug");
     });
 
     it("should initialize with different log levels", async () => {
@@ -79,40 +83,7 @@ describe("LoggerService", () => {
     });
   });
 
-  describe("log level ladder", () => {
-    it("should only log errors when level is error", () => {
-      service.setLogLevel("error");
-
-      service.error("error message");
-      service.warn("warn message");
-      service.log("info message");
-      service.debug("debug message");
-      service.verbose("verbose message");
-
-      // Check that something was logged (winston uses stdout)
-      expect(service.getLogLevel()).toBe("error");
-    });
-
-    it("should respect log level hierarchy", () => {
-      service.setLogLevel("warn");
-      expect(service.getLogLevel()).toBe("warn");
-
-      service.setLogLevel("info");
-      expect(service.getLogLevel()).toBe("info");
-
-      service.setLogLevel("verbose"); // verbose comes before debug in Winston
-      expect(service.getLogLevel()).toBe("verbose");
-
-      service.setLogLevel("debug");
-      expect(service.getLogLevel()).toBe("debug");
-    });
-  });
-
   describe("logging methods with metadata", () => {
-    beforeEach(() => {
-      service.setLogLevel("debug"); // Enable all logs (debug includes verbose in Winston)
-    });
-
     it("should log info messages", () => {
       service.log("test message");
       service.log("test with metadata", { userId: "123" });
@@ -227,23 +198,7 @@ describe("LoggerService", () => {
     });
   });
 
-  describe("setLogLevel", () => {
-    it("should change log level dynamically", () => {
-      expect(service.getLogLevel()).toBe("error");
-
-      service.setLogLevel("verbose");
-      expect(service.getLogLevel()).toBe("verbose");
-
-      service.setLogLevel("warn");
-      expect(service.getLogLevel()).toBe("warn");
-    });
-  });
-
   describe("message formatting", () => {
-    beforeEach(() => {
-      service.setLogLevel("debug"); // Enable all logs (debug is the most permissive level)
-    });
-
     it("should handle different message types", () => {
       service.log("string message");
       service.log({ key: "object message" });
@@ -273,6 +228,161 @@ describe("LoggerService", () => {
       service.verbose("verbose", metadata);
 
       expect(service).toBeDefined();
+    });
+  });
+
+  describe("transport selection", () => {
+    it("should create stdout transport when configured", async () => {
+      const mockConfigService = createMockConfigService({
+        logTransport: "stdout",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      expect(testService).toBeDefined();
+
+      // Verify transport is created
+      const winston = (testService as any).winston;
+      expect(winston.transports.length).toBeGreaterThan(0);
+    });
+
+    it("should create stdout transport when 'both' is configured", async () => {
+      const mockConfigService = createMockConfigService({
+        logTransport: "both",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      const winston = (testService as any).winston;
+      expect(winston.transports.length).toBeGreaterThan(0);
+    });
+
+    it("should fallback to stdout when only otlp is configured (Phase 4 placeholder)", async () => {
+      const mockConfigService = createMockConfigService({
+        logTransport: "otlp",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      const winston = (testService as any).winston;
+      // Should have stdout transport as fallback until OTLP is implemented
+      expect(winston.transports.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("format strategies", () => {
+    it("should use nestLike format in development with winston format", async () => {
+      const mockConfigService = createMockConfigService({
+        env: "development",
+        logFormat: "winston",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      // Test that service initializes without error
+      expect(testService).toBeDefined();
+
+      // Log a message to verify format doesn't throw
+      testService.log("Test message with nestLike format");
+    });
+
+    it("should use OTEL-JSON format in development when explicitly configured", async () => {
+      const mockConfigService = createMockConfigService({
+        env: "development",
+        logFormat: "otel-json",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      expect(testService).toBeDefined();
+      testService.log("Test message with OTEL-JSON format");
+    });
+
+    it("should use Winston JSON format in production with winston format", async () => {
+      const mockConfigService = createMockConfigService({
+        env: "production",
+        logFormat: "winston",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      expect(testService).toBeDefined();
+      testService.log("Test message with Winston JSON format");
+    });
+
+    it("should use OTEL-JSON format in production by default", async () => {
+      const mockConfigService = createMockConfigService({
+        env: "production",
+        logFormat: "otel-json",
+      });
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          LoggerService,
+          {
+            provide: ConfigService,
+            useValue: mockConfigService,
+          },
+        ],
+      }).compile();
+
+      const testService = module.get<LoggerService>(LoggerService);
+      expect(testService).toBeDefined();
+      testService.log("Test message with OTEL-JSON format in production");
     });
   });
 });

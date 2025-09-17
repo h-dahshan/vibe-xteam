@@ -1,6 +1,7 @@
 import { Injectable, LoggerService as NestLoggerService } from "@nestjs/common";
-import { ConfigService } from "../config";
+import { ConfigService, ObservabilityConfig, AppConfig } from "../config";
 import * as winston from "winston";
+import { utilities as nestWinstonUtilities } from "nest-winston";
 import { LOG_LEVELS_LADDER, LogLevel } from "./constants/logger.constants";
 
 /**
@@ -9,37 +10,58 @@ import { LOG_LEVELS_LADDER, LogLevel } from "./constants/logger.constants";
  */
 @Injectable()
 export class LoggerService implements NestLoggerService {
-  private readonly environment: string;
-  private readonly includeStack: boolean;
-  private readonly serviceName: string;
-  private readonly logFormat: string;
-  private readonly logLevel: LogLevel;
+  private readonly app: AppConfig;
+  private readonly o11y: ObservabilityConfig;
   private readonly winston: winston.Logger;
+  private readonly includeStack: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    // Get all configuration from ConfigService
-    const app = this.configService.getApp();
-    const observability = this.configService.getObservability();
-
-    this.environment = app.nodeEnv;
+    this.app = this.configService.getApp();
+    this.o11y = this.configService.getObservability();
     this.includeStack =
       this.configService.isDevelopment || this.configService.isStaging;
-
-    this.serviceName = observability.logServiceName;
-    this.logFormat = observability.logFormat;
-    this.logLevel = observability.logLevel;
 
     // Initialize Winston logger
     this.winston = this.createWinstonLogger();
   }
 
   /**
+   * Create transports based on configuration
+   */
+  private createTransports(): winston.transport[] {
+    const { logTransport } = this.o11y;
+    const transports: winston.transport[] = [];
+
+    // Add stdout transport if configured
+    if (logTransport === "stdout" || logTransport === "both") {
+      transports.push(this.createStdoutTransport());
+    }
+
+    // OTLP transport will be added in Phase 4
+    if (logTransport === "otlp" || logTransport === "both") {
+      // TODO: Phase 4 - Add OTLP transport
+      // For now, fallback to stdout if OTLP is requested
+      if (transports.length === 0) {
+        transports.push(this.createStdoutTransport());
+      }
+    }
+
+    return transports;
+  }
+
+  /**
    * Create stdout transport for console output
    */
   private createStdoutTransport(): winston.transport {
+    // Use different format based on environment
+    const format = this.configService.isDevelopment
+      ? this.getDevelopmentFormat()
+      : this.getProductionFormat();
+
     return new winston.transports.Console({
       handleExceptions: true,
       handleRejections: true,
+      format,
     });
   }
 
@@ -47,53 +69,75 @@ export class LoggerService implements NestLoggerService {
    * Create Winston logger instance with configured format and transports
    */
   private createWinstonLogger(): winston.Logger {
-    const format = this.getLogFormat();
+    const { nodeEnv } = this.app;
+    const { logLevel, logServiceName } = this.o11y;
+    const transports = this.createTransports();
 
     return winston.createLogger({
-      format,
-      level: this.logLevel, // Direct use - our levels now match Winston
+      level: logLevel, // App's log levels now match Winston's
       defaultMeta: {
-        service: this.serviceName,
-        environment: this.environment,
+        service: logServiceName,
+        environment: nodeEnv,
       },
-      transports: [this.createStdoutTransport()],
+      transports,
     });
   }
 
   /**
-   * Get the appropriate log format based on configuration
+   * Get development format with colors and pretty printing
    */
-  private getLogFormat(): winston.Logform.Format {
-    const formats: winston.Logform.Format[] = [
+  private getDevelopmentFormat(): winston.Logform.Format {
+    return winston.format.combine(
       winston.format.timestamp(),
+      winston.format.ms(),
       winston.format.errors({ stack: this.includeStack }),
-    ];
+      nestWinstonUtilities.format.nestLike(this.app.name, {
+        colors: true,
+        prettyPrint: true,
+      })
+    );
+  }
 
-    switch (this.logFormat) {
-      case "otel-json":
-        // OpenTelemetry compatible JSON format
-        formats.push(
-          winston.format.metadata({
-            fillExcept: ["message", "level", "timestamp", "service"],
-          }),
-          winston.format.json()
-        );
-        break;
-      case "winston":
-      default:
-        // Standard Winston JSON format
-        formats.push(winston.format.json());
-        break;
+  /**
+   * Get production format based on configuration
+   */
+  private getProductionFormat(): winston.Logform.Format {
+    const { logFormat } = this.o11y;
+
+    if (logFormat === "winston") {
+      // In production, use standard Winston JSON without colors
+      return winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.errors({ stack: this.includeStack }),
+        winston.format.json()
+      );
     }
 
-    return winston.format.combine(...formats);
+    // Default to OTEL-JSON for production
+    return this.getOtelJsonFormat();
+  }
+
+  /**
+   * Get OTEL-JSON format for OpenTelemetry compatibility
+   */
+  private getOtelJsonFormat(): winston.Logform.Format {
+    return winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.errors({ stack: this.includeStack }),
+      winston.format.metadata({
+        fillExcept: ["message", "level", "timestamp", "service"],
+      }),
+      winston.format.json()
+    );
   }
 
   /**
    * Check if the given level should be logged based on ladder pattern
    */
   private shouldLog(level: LogLevel): boolean {
-    const enabledLevels = LOG_LEVELS_LADDER[this.logLevel];
+    const { logLevel } = this.o11y;
+
+    const enabledLevels = LOG_LEVELS_LADDER[logLevel];
     return enabledLevels.includes(level);
   }
 
@@ -237,17 +281,9 @@ export class LoggerService implements NestLoggerService {
   }
 
   /**
-   * Set the log level dynamically (useful for testing)
-   */
-  setLogLevel(level: LogLevel): void {
-    (this as any).logLevel = level;
-    this.winston.level = level; // Direct use - no mapping needed
-  }
-
-  /**
    * Get the current log level
    */
   getLogLevel(): LogLevel {
-    return this.logLevel;
+    return this.o11y.logLevel;
   }
 }
