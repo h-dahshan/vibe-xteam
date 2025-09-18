@@ -1,8 +1,14 @@
-import { Injectable, LoggerService as NestLoggerService } from "@nestjs/common";
+import {
+  Injectable,
+  LoggerService as NestLoggerService,
+  Optional,
+} from "@nestjs/common";
 import { ConfigService, ObservabilityConfig, AppConfig } from "../config";
+import { ClsService } from "nestjs-cls";
 import * as winston from "winston";
 import { utilities as nestWinstonUtilities } from "nest-winston";
 import { LOG_LEVELS_LADDER, LogLevel } from "./constants/logger.constants";
+import { LogContextUtil } from "./utils/context.util";
 
 /**
  * Logger service extending NestJS Logger with Winston integration
@@ -15,7 +21,10 @@ export class LoggerService implements NestLoggerService {
   private readonly winston: winston.Logger;
   private readonly includeStack: boolean;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly cls?: ClsService
+  ) {
     this.app = this.configService.getApp();
     this.o11y = this.configService.getObservability();
     this.includeStack =
@@ -150,7 +159,7 @@ export class LoggerService implements NestLoggerService {
   }
 
   /**
-   * Core logging method with metadata support
+   * Core logging method with metadata support and CLS context
    */
   private logWithLevel(
     level: LogLevel,
@@ -161,12 +170,17 @@ export class LoggerService implements NestLoggerService {
   ): void {
     if (!this.shouldLog(level)) return;
 
+    // Extract CLS context if available
+    const clsContext = this.cls ? LogContextUtil.extractContext(this.cls) : {};
+
     const logData: winston.LogEntry = {
       level: level,
       message: this.formatMessage(message, context),
-      ...metadata,
+      ...clsContext, // Add CLS context first
+      ...metadata, // User metadata can override
     };
 
+    // TODO: where is stack trace including is configured?
     if (trace) {
       logData.trace = trace;
     }
